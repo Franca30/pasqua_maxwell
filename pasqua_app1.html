@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="it" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Termodinamico: Curva di Riscaldamento dell'Acqua</title>
+    <!-- Tailwind CSS per layout responsivo e styling moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter e JetBrains Mono per dati scientifici -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        lab: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Stili personalizzati per rifiniture scientifiche e animazioni fluide */
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #0284c7;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #334155;
+        }
+
+        /* Animazione fiamma/piastra */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.85; transform: scaleY(1); }
+            50% { opacity: 1; transform: scaleY(1.06); }
+        }
+        .heater-glow {
+            animation: pulseGlow 0.8s infinite ease-in-out;
+        }
+
+        /* Scrollbar sottile per pannelli */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- HEADER / BARRA DI CONTROLLO SUPERIORE -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <!-- Titolo e Badge Didattico -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight">Passaggi di Stato & Curva di Riscaldamento</h1>
+                        <span class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                            Fisica & Chimica • 1° Biennio
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Simulatore termodinamico interattivo H₂O (Pressione standard: 1 atm)</p>
+                </div>
+            </div>
+
+            <!-- Controlli Principali di Laboratorio -->
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <!-- Play / Pausa -->
+                <button id="btnPlayPause" class="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition active:scale-95">
+                    <svg id="iconPlay" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                    <svg id="iconPause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z"/></svg>
+                    <span id="txtPlayPause">Avvia Riscaldamento</span>
+                </button>
+
+                <!-- Reset -->
+                <button id="btnReset" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition active:scale-95" title="Riporta a -20°C">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+
+                <!-- Selettore Velocità -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+                    <span class="px-2 text-slate-500 dark:text-slate-400 hidden sm:inline">Vel:</span>
+                    <button data-speed="1" class="speed-btn px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400">1x</button>
+                    <button data-speed="2" class="speed-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">2x</button>
+                    <button data-speed="4" class="speed-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">4x</button>
+                </div>
+
+                <!-- Selettore Massa Acqua -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+                    <span class="px-2 text-slate-500 dark:text-slate-400">Massa:</span>
+                    <button data-mass="50" class="mass-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">50g</button>
+                    <button data-mass="100" class="mass-btn px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400">100g</button>
+                    <button data-mass="250" class="mass-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">250g</button>
+                </div>
+
+                <!-- Toggle Tema Chiaro / Scuro (LIM / Proiettore) -->
+                <button id="btnTheme" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition" title="Cambia tema Chiaro/Scuro">
+                    <svg id="iconSun" class="w-5 h-5 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+                    <svg id="iconMoon" class="w-5 h-5 block dark:hidden text-slate-700" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD: 3 COLONNE RESPONSIVE -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+
+        <!-- AREA 1: SIMULATORE MACROSCOPICO E MOLECOLARE (4 colonne su desktop) -->
+        <section class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h2 class="font-bold text-sm uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                    1. Laboratorio & Vista Molecolare
+                </h2>
+                <span id="badgePhaseMacro" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                    SOLIDO (Ghiaccio)
+                </span>
+            </div>
+
+            <!-- Contenitore Visualizzazione Doppia (Becher + Lente Molecolare) -->
+            <div class="p-4 flex-1 flex flex-col gap-4">
+                
+                <!-- Griglia Becher + Vista Microscopica -->
+                <div class="grid grid-cols-2 gap-3 flex-1 min-h-[290px]">
+                    
+                    <!-- Vista Macroscopica: Becher, Termometro e Piastra -->
+                    <div class="relative bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex flex-col items-center justify-between overflow-hidden">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 self-start">Vista Macro</span>
+                        
+                        <!-- Termometro Digitale e Analogico -->
+                        <div class="w-full flex items-center justify-between bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm z-10">
+                            <div class="flex items-center gap-1.5">
+                                <!-- Bulbo termometro analogico -->
+                                <div class="w-3 h-7 bg-slate-200 dark:bg-slate-700 rounded-full p-0.5 flex items-end overflow-hidden">
+                                    <div id="thermoBar" class="w-full bg-sky-500 rounded-full transition-all duration-100" style="height: 15%;"></div>
+                                </div>
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Temp:</span>
+                            </div>
+                            <span id="tempDisplay" class="font-mono font-bold text-base text-sky-600 dark:text-sky-400">-20.0 °C</span>
+                        </div>
+
+                        <!-- Becher graduato con Canvas interno per acqua/ghiaccio/bolle/vapore -->
+                        <div class="relative w-32 h-40 my-1 flex items-end justify-center">
+                            <canvas id="macroCanvas" class="w-full h-full rounded-b-xl"></canvas>
+                            <!-- Tacche graduate del becher -->
+                            <div class="absolute inset-0 border-x-2 border-b-2 border-slate-400/70 dark:border-slate-500/70 rounded-b-xl pointer-events-none flex flex-col justify-evenly py-3 px-1">
+                                <div class="w-3 border-t border-slate-400/60"></div>
+                                <div class="w-5 border-t border-slate-400/60"></div>
+                                <div class="w-3 border-t border-slate-400/60"></div>
+                                <div class="w-5 border-t border-slate-400/60"></div>
+                            </div>
+                        </div>
+
+                        <!-- Piastra riscaldante / Fornello -->
+                        <div class="w-full flex flex-col items-center">
+                            <div id="heaterElement" class="w-32 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-colors duration-300"></div>
+                            <div class="w-36 h-4 bg-slate-700 dark:bg-slate-800 rounded-t-md mt-0.5 flex items-center justify-center">
+                                <span id="powerIndicator" class="text-[10px] font-mono text-slate-300">POTENZA: 500 W</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista Microscopica: Particelle H2O -->
+                    <div class="relative bg-slate-900 dark:bg-slate-950 rounded-xl border-2 border-sky-500/40 p-3 flex flex-col justify-between overflow-hidden shadow-inner">
+                        <div class="flex items-center justify-between z-10">
+                            <span class="text-[11px] font-semibold uppercase tracking-wider text-sky-400 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                Micro (H₂O)
+                            </span>
+                            <span id="bondStatus" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">Legami H: Stabili</span>
+                        </div>
+
+                        <!-- Canvas Molecolare -->
+                        <canvas id="microCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+                        <!-- Legenda molecola H2O -->
+                        <div class="z-10 mt-auto bg-slate-950/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-800 flex items-center justify-between text-[10px] text-slate-300">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Ossigeno</span>
+                            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span> Idrogeno</span>
+                            <span class="flex items-center gap-1 text-sky-400">--- Leg. H</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controllo Potenza Fornello (Flusso di Calore Q/t) -->
+                <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="powerSlider" class="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+                            Potenza Piastra Riscaldante
+                        </label>
+                        <span id="powerValueLabel" class="font-mono text-xs font-bold text-orange-600 dark:text-orange-400">500 W (500 J/s)</span>
+                    </div>
+                    <input type="range" id="powerSlider" min="100" max="1000" step="50" value="500" class="w-full">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+                        <span>100 W (Lento)</span>
+                        <span>500 W (Standard)</span>
+                        <span>1000 W (Intenso)</span>
+                    </div>
+                </div>
+
+                <!-- Indicatori Energetici in Tempo Reale (Energia Cinetica vs Potenziale) -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-semibold text-slate-600 dark:text-slate-300">Energia Cinetica (E<sub>c</sub>)</span>
+                            <span id="ecStatus" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Aumenta</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div id="barKinetic" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-100" style="width: 5%;"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Legata alla <strong>Temperatura</strong> (agitazione termica)</p>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-semibold text-slate-600 dark:text-slate-300">Energia Potenziale (E<sub>p</sub>)</span>
+                            <span id="epStatus" class="text-[10px] font-bold text-slate-400">Costante</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div id="barPotential" class="h-full bg-gradient-to-r from-sky-400 to-indigo-600 transition-all duration-100" style="width: 10%;"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Legata ai <strong>Legami</strong> (distanza intermolecolare)</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- AREA 2: GRAFICO INTERATTIVO CURVA DI RISCALDAMENTO (5 colonne su desktop) -->
+        <section class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-bold text-sm uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    2. Curva di Riscaldamento (T vs Q)
+                </h2>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-slate-500 dark:text-slate-400">Calore Q: <strong id="heatTotalDisplay" class="text-indigo-600 dark:text-indigo-400">0.00 kJ</strong></span>
+                    <span class="text-slate-500 dark:text-slate-400">Tempo: <strong id="timeDisplay" class="text-slate-700 dark:text-slate-200">0 s</strong></span>
+                </div>
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between gap-3">
+                <!-- Istruzione rapida interattiva -->
+                <div class="flex items-center justify-between text-xs bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 px-3 py-2 rounded-lg border border-indigo-100 dark:border-indigo-900/60">
+                    <span>💡 <strong>Suggerimento:</strong> Clicca su un tratto del grafico o sui pulsanti sotto per esplorare una fase specifica.</span>
+                </div>
+
+                <!-- Contenitore Canvas Grafico Reattivo -->
+                <div id="chartContainer" class="relative flex-1 min-h-[300px] w-full bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden cursor-pointer">
+                    <canvas id="curveCanvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Selettori Rapidi delle 5 Fasi della Curva -->
+                <div class="grid grid-cols-5 gap-1.5 pt-1">
+                    <button data-stage="0" class="stage-btn flex flex-col items-center p-2 rounded-xl border text-center transition bg-sky-50 border-sky-300 dark:bg-sky-950/60 dark:border-sky-700">
+                        <span class="text-[10px] font-bold uppercase text-sky-700 dark:text-sky-300">Tratto A-B</span>
+                        <span class="text-[11px] font-semibold mt-0.5">Ghiaccio</span>
+                        <span class="text-[9px] text-slate-500 dark:text-slate-400">-20°C → 0°C</span>
+                    </button>
+                    <button data-stage="1" class="stage-btn flex flex-col items-center p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition">
+                        <span class="text-[10px] font-bold uppercase text-teal-600 dark:text-teal-400">Tratto B-C</span>
+                        <span class="text-[11px] font-semibold mt-0.5">Fusione</span>
+                        <span class="text-[9px] text-slate-500 dark:text-slate-400">0°C (Sosta)</span>
+                    </button>
+                    <button data-stage="2" class="stage-btn flex flex-col items-center p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition">
+                        <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Tratto C-D</span>
+                        <span class="text-[11px] font-semibold mt-0.5">Liquido</span>
+                        <span class="text-[9px] text-slate-500 dark:text-slate-400">0°C → 100°C</span>
+                    </button>
+                    <button data-stage="3" class="stage-btn flex flex-col items-center p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition">
+                        <span class="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">Tratto D-E</span>
+                        <span class="text-[11px] font-semibold mt-0.5">Ebollizione</span>
+                        <span class="text-[9px] text-slate-500 dark:text-slate-400">100°C (Sosta)</span>
+                    </button>
+                    <button data-stage="4" class="stage-btn flex flex-col items-center p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition">
+                        <span class="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400">Tratto E-F</span>
+                        <span class="text-[11px] font-semibold mt-0.5">Vapore</span>
+                        <span class="text-[9px] text-slate-500 dark:text-slate-400">100°C → 120°C</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- AREA 3: PANNELLO DIDATTICO, FORMULE E QUIZ (3 colonne su desktop) -->
+        <section class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+            <!-- Tabs di navigazione interna del pannello didattico -->
+            <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+                <button id="tabTheoryBtn" class="flex-1 py-3 px-2 text-xs font-bold uppercase tracking-wider border-b-2 border-sky-600 text-sky-600 dark:text-sky-400 transition">
+                    Teoria & Formule
+                </button>
+                <button id="tabFaqBtn" class="flex-1 py-3 px-2 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition">
+                    Soste Termiche
+                </button>
+                <button id="tabQuizBtn" class="flex-1 py-3 px-2 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition flex items-center justify-center gap-1">
+                    Quiz
+                    <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 rounded-full text-[10px]">5</span>
+                </button>
+            </div>
+
+            <!-- CONTENUTO TAB 1: TEORIA E FORMULE DINAMICHE -->
+            <div id="panelTheory" class="p-4 flex-1 overflow-y-auto flex flex-col gap-4">
+                
+                <!-- Card Fase Corrente -->
+                <div id="stageInfoCard" class="p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/80">
+                    <div class="flex items-center justify-between mb-1">
+                        <span id="stageCodeBadge" class="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">Tratto A → B</span>
+                        <span id="stageTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 shadow-sm">Calore Sensibile</span>
+                    </div>
+                    <h3 id="stageTitle" class="text-base font-bold text-slate-900 dark:text-white mb-1.5">Riscaldamento del Ghiaccio</h3>
+                    <p id="stageDesc" class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                        Il ghiaccio assorbe calore e la sua temperatura sale da -20°C a 0°C. Le molecole di H₂O vibrano sempre più velocemente attorno alle loro posizioni fisse nel reticolo cristallino esagonale, ma i legami a idrogeno non si spezzano ancora.
+                    </p>
+                </div>
+
+                <!-- Card Formula Fisica Pertinente con Calcolo Live -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Legge Fisica Applicata</span>
+                    <div id="formulaBox" class="font-mono text-base font-bold text-center py-2.5 px-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 shadow-inner">
+                        Q = m · c<sub>s</sub> · ΔT
+                    </div>
+                    
+                    <!-- Valori Numerici per la massa selezionata -->
+                    <div class="mt-3 space-y-1.5 text-xs">
+                        <div class="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-700/70">
+                            <span class="text-slate-500 dark:text-slate-400">Massa campione (m):</span>
+                            <span id="calcMass" class="font-mono font-semibold">0.100 kg (100 g)</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-700/70">
+                            <span id="calcConstLabel" class="text-slate-500 dark:text-slate-400">Calore specifico (c<sub>s</sub>):</span>
+                            <span id="calcConstVal" class="font-mono font-semibold">2090 J/(kg·°C)</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-700/70">
+                            <span id="calcDeltaLabel" class="text-slate-500 dark:text-slate-400">Variazione ΔT:</span>
+                            <span id="calcDeltaVal" class="font-mono font-semibold">20 °C</span>
+                        </div>
+                        <div class="flex justify-between pt-1.5 text-sm font-bold text-slate-900 dark:text-white">
+                            <span>Calore totale tratto:</span>
+                            <span id="calcTotalStageQ" class="font-mono text-sky-600 dark:text-sky-400">4.18 kJ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabella Costanti Fisiche dell'Acqua (Riferimento rapido) -->
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px]">
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider text-[10px]">Costanti dell'Acqua (1 atm)</h4>
+                    <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-mono">
+                        <li class="flex justify-between"><span>c (ghiaccio):</span> <span>2,09 kJ/(kg·°C)</span></li>
+                        <li class="flex justify-between"><span>L<sub>f</sub> (fusione a 0°C):</span> <span class="text-teal-600 dark:text-teal-400 font-bold">334 kJ/kg</span></li>
+                        <li class="flex justify-between"><span>c (acqua liquida):</span> <span>4,186 kJ/(kg·°C)</span></li>
+                        <li class="flex justify-between"><span>L<sub>v</sub> (vaporizz. a 100°C):</span> <span class="text-amber-600 dark:text-amber-400 font-bold">2260 kJ/kg</span></li>
+                        <li class="flex justify-between"><span>c (vapore acqueo):</span> <span>2,01 kJ/(kg·°C)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CONTENUTO TAB 2: APPROFONDIMENTO SOSTE TERMICHE -->
+            <div id="panelFaq" class="p-4 flex-1 overflow-y-auto hidden flex-col gap-3">
+                <div class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
+                    <h3 class="font-bold text-sm text-amber-900 dark:text-amber-300 mb-1.5 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                        Domanda Chiave d'Esame
+                    </h3>
+                    <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                        "Perché durante la fusione (0°C) e l'ebollizione (100°C) la temperatura resta costante anche se il fornello continua a fornire calore?"
+                    </p>
+                    <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                        La temperatura misura l'<strong>energia cinetica media</strong> delle molecole (quanto velocemente si muovono). Durante un passaggio di stato, tutto il calore assorbito (detto <strong>Calore Latente</strong>) viene utilizzato per compiere un lavoro interno: <strong>indebolire o spezzare i legami a idrogeno</strong> tra le molecole di H₂O.
+                    </p>
+                    <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-2">
+                        Aumenta quindi l'<strong>energia potenziale intermolecolare</strong>, mentre l'energia cinetica media rimane invariata: per questo il termometro segna una <strong>sosta termica</strong> finché tutta la sostanza non ha cambiato stato!
+                    </p>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <h4 class="font-bold text-xs text-slate-800 dark:text-slate-200 mb-1">Perché il pianerottolo a 100°C è molto più lungo di quello a 0°C?</h4>
+                    <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                        Osserva il grafico: il tratto <strong>D-E</strong> (ebollizione) è quasi <strong>7 volte più lungo</strong> del tratto <strong>B-C</strong> (fusione). Infatti:
+                        <br>• Per fondere 1 kg di ghiaccio servono <strong>334 kJ</strong> (i legami si allentano, le molecole scivolano ma restano vicine).
+                        <br>• Per vaporizzare 1 kg di acqua servono ben <strong>2260 kJ</strong>, perché bisogna vincere completamente tutte le forze di attrazione per liberare le molecole allo stato gassoso!
+                    </p>
+                </div>
+            </div>
+
+            <!-- CONTENUTO TAB 3: MINI-QUIZ DI AUTOVALUTAZIONE -->
+            <div id="panelQuiz" class="p-4 flex-1 overflow-y-auto hidden flex-col justify-between gap-3">
+                <div id="quizContainer" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span id="quizProgress" class="text-xs font-bold text-sky-600 dark:text-sky-400">Domanda 1 di 5</span>
+                        <span id="quizScoreBadge" class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">Punti: 0</span>
+                    </div>
+                    
+                    <p id="quizQuestion" class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                        Caricamento domanda...
+                    </p>
+
+                    <div id="quizOptions" class="space-y-2">
+                        <!-- Opzioni generate via JS -->
+                    </div>
+
+                    <div id="quizFeedback" class="hidden p-3 rounded-xl text-xs leading-relaxed"></div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                    <button id="btnNextQuiz" class="hidden px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition">
+                        Prossima Domanda →
+                    </button>
+                    <button id="btnRestartQuiz" class="hidden px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                        Ricomincia Quiz
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SCRIPT PRINCIPALE: FISICA, SIMULAZIONE MOLECOLARE, GRAFICO CANVAS E QUIZ -->
+    <script>
+        /**
+         * MOTORE FISICO E DIDATTICO - PASSAGGI DI STATO DELL'ACQUA
+         * Modello termodinamico accurato basato sulle costanti reali dell'acqua a P = 1 atm.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // =========================================================================
+            // 1. COSTANTI FISICHE E CONFIGURAZIONE DEL SISTEMA
+            // =========================================================================
+            const PHYSICS = {
+                T_MIN: -20,         // Temperatura iniziale (°C)
+                T_MELT: 0,          // Temperatura di fusione (°C)
+                T_BOIL: 100,        // Temperatura di ebollizione (°C)
+                T_MAX: 120,         // Temperatura finale (°C)
+                c_ice: 2.09,        // Calore specifico ghiaccio [J / (g * °C)]
+                L_fus: 334.0,       // Calore latente di fusione [J / g]
+                c_liq: 4.186,       // Calore specifico acqua liquida [J / (g * °C)]
+                L_vap: 2260.0,      // Calore latente di vaporizzazione [J / g]
+                c_vap: 2.01         // Calore specifico vapore acqueo [J / (g * °C)]
+            };
+
+            // Stato della simulazione
+            const state = {
+                isRunning: false,
+                speed: 1,           // Moltiplicatore temporale (1x, 2x, 4x)
+                mass: 100,          // Massa in grammi (50g, 100g, 250g)
+                power: 500,         // Potenza fornello in Watt (J/s)
+                currentQ: 0,        // Calore totale fornito finora [Joule]
+                elapsedTime: 0,     // Tempo simulato trascorso [secondi]
+                temp: -20,          // Temperatura istantanea [°C]
+                stageIndex: 0,      // 0: Ghiaccio, 1: Fusione, 2: Liquido, 3: Ebollizione, 4: Vapore
+                stageProgress: 0,   // Progresso 0..1 all'interno dello stadio corrente
+                thresholds: [],     // Soglie cumulative di Q [Joule] per ciascuno dei 5 tratti
+                lastFrameTime: null
+            };
+
+            // Metadati didattici per i 5 tratti della curva
+            const STAGES_INFO = [
+                {
+                    code: "Tratto A → B",
+                    type: "Calore Sensibile",
+                    title: "Riscaldamento del Ghiaccio",
+                    desc: "Il ghiaccio assorbe calore e la temperatura sale da -20°C a 0°C. Le molecole H₂O vibrano più intensamente nel reticolo cristallino esagonale, aumentando la loro energia cinetica media.",
+                    formula: "Q = m · c_s · ΔT",
+                    constLabel: "Calore specifico (c_s):",
+                    constVal: "2090 J/(kg·°C)",
+                    deltaLabel: "Variazione ΔT:",
+                    deltaVal: "20 °C",
+                    color: "#0284c7",
+                    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300",
+                    macroLabel: "SOLIDO (Ghiaccio)",
+                    bondText: "Legami H: Rigidi (Reticolo)"
+                },
+                {
+                    code: "Tratto B → C",
+                    type: "Calore Latente (Sosta Termica)",
+                    title: "Fusione (Passaggio Solido → Liquido)",
+                    desc: "SOSTA TERMICA A 0°C: Nel becher coesistono ghiaccio e acqua liquida. Tutto il calore fornito serve a rompere parzialmente i legami a idrogeno (aumenta Ep), mentre la temperatura (Ec) non cambia!",
+                    formula: "Q = m · L_f",
+                    constLabel: "Calore latente fusione (L_f):",
+                    constVal: "334 000 J/kg",
+                    deltaLabel: "Temperatura (costante):",
+                    deltaVal: "0 °C (ΔT = 0)",
+                    color: "#0d9488",
+                    badgeClass: "bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300",
+                    macroLabel: "FUSIONE (Ghiaccio + Acqua)",
+                    bondText: "Legami H: In rottura"
+                },
+                {
+                    code: "Tratto C → D",
+                    type: "Calore Sensibile",
+                    title: "Riscaldamento dell'Acqua Liquida",
+                    desc: "Tutto il ghiaccio è fuso. Il calore fornito aumenta nuovamente l'energia cinetica delle molecole, che scorrono le une sulle altre sempre più velocemente fino a raggiungere i 100°C.",
+                    formula: "Q = m · c_l · ΔT",
+                    constLabel: "Calore specifico (c_l):",
+                    constVal: "4186 J/(kg·°C)",
+                    deltaLabel: "Variazione ΔT:",
+                    deltaVal: "100 °C",
+                    color: "#2563eb",
+                    badgeClass: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300",
+                    macroLabel: "LIQUIDO (Acqua)",
+                    bondText: "Legami H: Mobili / Dinamici"
+                },
+                {
+                    code: "Tratto D → E",
+                    type: "Calore Latente (Sosta Termica)",
+                    title: "Ebollizione (Passaggio Liquido → Vapore)",
+                    desc: "SOSTA TERMICA A 100°C: Si formano bolle di vapore in tutto il liquido. Il calore latente di vaporizzazione spezza completamente i legami intermolecolari. Richiede quasi 7 volte più energia della fusione!",
+                    formula: "Q = m · L_v",
+                    constLabel: "Calore latente vap. (L_v):",
+                    constVal: "2 260 000 J/kg",
+                    deltaLabel: "Temperatura (costante):",
+                    deltaVal: "100 °C (ΔT = 0)",
+                    color: "#d97706",
+                    badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300",
+                    macroLabel: "EBOLLIZIONE (Acqua + Vapore)",
+                    bondText: "Legami H: Spezzati"
+                },
+                {
+                    code: "Tratto E → F",
+                    type: "Calore Sensibile",
+                    title: "Surriscaldamento del Vapore Acqueo",
+                    desc: "Tutta l'acqua è evaporata (in un recipiente chiuso/pressurizzato). Il vapore assorbe calore e la sua temperatura supera i 100°C: le molecole si muovono in modo caotico ad altissima velocità.",
+                    formula: "Q = m · c_v · ΔT",
+                    constLabel: "Calore specifico (c_v):",
+                    constVal: "2010 J/(kg·°C)",
+                    deltaLabel: "Variazione ΔT:",
+                    deltaVal: "20 °C",
+                    color: "#e11d48",
+                    badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300",
+                    macroLabel: "AERIFORME (Vapore)",
+                    bondText: "Legami H: Assenti"
+                }
+            ];
+
+            /**
+             * Calcola le soglie cumulative di calore Q (in Joule) in base alla massa selezionata.
+             */
+            function recalculateThresholds() {
+                const m = state.mass;
+                const q1 = m * PHYSICS.c_ice * (PHYSICS.T_MELT - PHYSICS.T_MIN); // A -> B
+                const q2 = m * PHYSICS.L_fus;                                   // B -> C
+                const q3 = m * PHYSICS.c_liq * (PHYSICS.T_BOIL - PHYSICS.T_MELT); // C -> D
+                const q4 = m * PHYSICS.L_vap;                                   // D -> E
+                const q5 = m * PHYSICS.c_vap * (PHYSICS.T_MAX - PHYSICS.T_BOIL); // E -> F
+
+                state.stageEnergies = [q1, q2, q3, q4, q5];
+                state.thresholds = [
+                    q1,
+                    q1 + q2,
+                    q1 + q2 + q3,
+                    q1 + q2 + q3 + q4,
+                    q1 + q2 + q3 + q4 + q5
+                ];
+            }
+
+            /**
+             * Dato un valore di calore Q, determina temperatura, stadio e progresso interno.
+             */
+            function updateThermodynamicsFromQ() {
+                const [t0, t1, t2, t3, t4] = state.thresholds;
+                const q = Math.max(0, Math.min(state.currentQ, t4));
+                state.currentQ = q;
+
+                if (q < t0) {
+                    state.stageIndex = 0;
+                    state.stageProgress = q / t0;
+                    state.temp = PHYSICS.T_MIN + state.stageProgress * (PHYSICS.T_MELT - PHYSICS.T_MIN);
+                } else if (q < t1) {
+                    state.stageIndex = 1;
+                    state.stageProgress = (q - t0) / (t1 - t0);
+                    state.temp = PHYSICS.T_MELT;
+                } else if (q < t2) {
+                    state.stageIndex = 2;
+                    state.stageProgress = (q - t1) / (t2 - t1);
+                    state.temp = PHYSICS.T_MELT + state.stageProgress * (PHYSICS.T_BOIL - PHYSICS.T_MELT);
+                } else if (q < t3) {
+                    state.stageIndex = 3;
+                    state.stageProgress = (q - t2) / (t3 - t2);
+                    state.temp = PHYSICS.T_BOIL;
+                } else {
+                    state.stageIndex = 4;
+                    state.stageProgress = Math.min(1, (q - t3) / (t4 - t3));
+                    state.temp = PHYSICS.T_BOIL + state.stageProgress * (PHYSICS.T_MAX - PHYSICS.T_BOIL);
+                }
+            }
+
+            // =========================================================================
+            // 2. GESTIONE CANVAS MOLECOLARE (VISTA MICROSCOPICA H2O)
+            // =========================================================================
+            const microCanvas = document.getElementById('microCanvas');
+            const microCtx = microCanvas.getContext('2d');
+            const NUM_MOLECULES = 24; // Griglia 6x4 per il reticolo cristallino
+            const molecules = [];
+
+            function initMolecules() {
+                molecules.length = 0;
+                const cols = 6;
+                const rows = 4;
+                for (let i = 0; i < NUM_MOLECULES; i++) {
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    // Posizione relativa normalizzata [0..1] nel reticolo esagonale del ghiaccio
+                    const hexOffset = (row % 2 === 1) ? 0.06 : 0;
+                    const homeX = 0.16 + col * 0.13 + hexOffset;
+                    const homeY = 0.28 + row * 0.16;
+
+                    molecules.push({
+                        x: homeX,
+                        y: homeY,
+                        homeX: homeX,
+                        homeY: homeY,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        angle: Math.random() * Math.PI * 2,
+                        vAngle: (Math.random() - 0.5) * 2,
+                        phaseOffset: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function updateAndDrawMolecules(dt, timeSec) {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = microCanvas.getBoundingClientRect();
+                if (microCanvas.width !== rect.width * dpr || microCanvas.height !== rect.height * dpr) {
+                    microCanvas.width = rect.width * dpr;
+                    microCanvas.height = rect.height * dpr;
+                }
+                const w = microCanvas.width;
+                const h = microCanvas.height;
+
+                microCtx.clearRect(0, 0, w, h);
+
+                // Calcola frazione solida, liquida e gassosa in base allo stadio
+                let solidRatio = 0;
+                let gasRatio = 0;
+
+                if (state.stageIndex === 0) {
+                    solidRatio = 1;
+                } else if (state.stageIndex === 1) {
+                    solidRatio = 1 - state.stageProgress; // Fusione graduale
+                } else if (state.stageIndex === 2) {
+                    solidRatio = 0;
+                    gasRatio = 0;
+                } else if (state.stageIndex === 3) {
+                    gasRatio = state.stageProgress; // Vaporizzazione graduale
+                } else {
+                    gasRatio = 1;
+                }
+
+                // Fattore agitazione termica (legato alla temperatura)
+                const tempFactor = Math.max(0.15, (state.temp + 30) / 150);
+
+                // Aggiorna posizioni delle molecole
+                molecules.forEach((m, idx) => {
+                    const isSolid = (idx / NUM_MOLECULES) < solidRatio;
+                    const isGas = (idx / NUM_MOLECULES) > (1 - gasRatio);
+
+                    if (isSolid) {
+                        // STATO SOLIDO: Vibrazione attorno alla posizione del reticolo cristallino
+                        const amp = 0.008 + tempFactor * 0.015;
+                        m.x = m.homeX + Math.sin(timeSec * 18 + m.phaseOffset) * amp;
+                        m.y = m.homeY + Math.cos(timeSec * 16 + m.phaseOffset) * amp;
+                        m.angle = Math.sin(timeSec * 10 + m.phaseOffset) * 0.25;
+                    } else if (isGas) {
+                        // STATO AERIFORME (Vapore): Moto rettilineo caotico veloce in tutto il volume
+                        const speedScale = 0.55 + tempFactor * 0.75;
+                        m.x += m.vx * dt * speedScale * 2.2;
+                        m.y += m.vy * dt * speedScale * 2.2;
+                        m.angle += m.vAngle * dt * 4;
+
+                        // Rimbalzo elastico sulle pareti
+                        if (m.x < 0.08) { m.x = 0.08; m.vx = Math.abs(m.vx); }
+                        if (m.x > 0.92) { m.x = 0.92; m.vx = -Math.abs(m.vx); }
+                        if (m.y < 0.16) { m.y = 0.16; m.vy = Math.abs(m.vy); }
+                        if (m.y > 0.84) { m.y = 0.84; m.vy = -Math.abs(m.vy); }
+                    } else {
+                        // STATO LIQUIDO: Scorrimento fluido nella parte inferiore/centrale con coesione
+                        const flowSpeed = 0.18 + tempFactor * 0.35;
+                        m.vx += (Math.random() - 0.5) * 1.5 * dt;
+                        m.vy += (Math.random() - 0.5) * 1.5 * dt + 0.25 * dt; // Leggera gravità
+                        
+                        // Limita velocità
+                        const vMag = Math.hypot(m.vx, m.vy);
+                        if (vMag > flowSpeed) {
+                            m.vx = (m.vx / vMag) * flowSpeed;
+                            m.vy = (m.vy / vMag) * flowSpeed;
+                        }
+
+                        m.x += m.vx * dt;
+                        m.y += m.vy * dt;
+                        m.angle += m.vAngle * dt * 1.5;
+
+                        // Confinamento nel volume liquido (metà inferiore del box)
+                        if (m.x < 0.1) { m.x = 0.1; m.vx = Math.abs(m.vx); }
+                        if (m.x > 0.9) { m.x = 0.9; m.vx = -Math.abs(m.vx); }
+                        if (m.y < 0.38) { m.y = 0.38; m.vy = Math.abs(m.vy); }
+                        if (m.y > 0.84) { m.y = 0.84; m.vy = -Math.abs(m.vy); }
+                    }
+                });
+
+                // Disegna Legami a Idrogeno (linee tratteggiate azzurro chiaro tra molecole vicine non gassose)
+                if (gasRatio < 0.95) {
+                    microCtx.save();
+                    microCtx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                    microCtx.lineWidth = 1.5 * dpr;
+                    microCtx.setLineDash([3 * dpr, 3 * dpr]);
+
+                    for (let i = 0; i < NUM_MOLECULES; i++) {
+                        const isGasI = (i / NUM_MOLECULES) > (1 - gasRatio);
+                        if (isGasI) continue;
+
+                        for (let j = i + 1; j < NUM_MOLECULES; j++) {
+                            const isGasJ = (j / NUM_MOLECULES) > (1 - gasRatio);
+                            if (isGasJ) continue;
+
+                            const dx = (molecules[i].x - molecules[j].x) * w;
+                            const dy = (molecules[i].y - molecules[j].y) * h;
+                            const dist = Math.hypot(dx, dy);
+
+                            if (dist < w * 0.22) {
+                                microCtx.beginPath();
+                                microCtx.moveTo(molecules[i].x * w, molecules[i].y * h);
+                                microCtx.lineTo(molecules[j].x * w, molecules[j].y * h);
+                                microCtx.stroke();
+                            }
+                        }
+                    }
+                    microCtx.restore();
+                }
+
+                // Disegna le singole molecole triatomiche H2O (1 Ossigeno rosso + 2 Idrogeni bianchi a 104.5°)
+                const rO = Math.max(5.5, w * 0.026);
+                const rH = rO * 0.58;
+                const bondLen = rO * 1.15;
+                const halfAngle = (104.5 / 2) * (Math.PI / 180);
+
+                molecules.forEach(m => {
+                    const cx = m.x * w;
+                    const cy = m.y * h;
+
+                    microCtx.save();
+                    microCtx.translate(cx, cy);
+                    microCtx.rotate(m.angle);
+
+                    // Atomi di Idrogeno (2 sfere bianche)
+                    const h1x = Math.cos(-halfAngle) * bondLen;
+                    const h1y = Math.sin(-halfAngle) * bondLen;
+                    const h2x = Math.cos(halfAngle) * bondLen;
+                    const h2y = Math.sin(halfAngle) * bondLen;
+
+                    microCtx.fillStyle = '#f8fafc';
+                    microCtx.beginPath();
+                    microCtx.arc(h1x, h1y, rH, 0, Math.PI * 2);
+                    microCtx.arc(h2x, h2y, rH, 0, Math.PI * 2);
+                    microCtx.fill();
+
+                    // Atomo di Ossigeno (sfera rossa con riflesso)
+                    const grad = microCtx.createRadialGradient(-rO * 0.3, -rO * 0.3, rO * 0.1, 0, 0, rO);
+                    grad.addColorStop(0, '#fb7185');
+                    grad.addColorStop(1, '#e11d48');
+                    microCtx.fillStyle = grad;
+                    microCtx.beginPath();
+                    microCtx.arc(0, 0, rO, 0, Math.PI * 2);
+                    microCtx.fill();
+
+                    microCtx.restore();
+                });
+            }
+
+            // =========================================================================
+            // 3. GESTIONE CANVAS MACROSCOPICO (BECHER, GHIACCIO, ACQUA, BOLLE, VAPORE)
+            // =========================================================================
+            const macroCanvas = document.getElementById('macroCanvas');
+            const macroCtx = macroCanvas.getContext('2d');
+            const bubbles = Array.from({ length: 18 }, () => ({
+                x: Math.random(),
+                y: Math.random(),
+                r: 2 + Math.random() * 3,
+                speed: 0.4 + Math.random() * 0.6
+            }));
+
+            function drawMacroBeaker(dt, timeSec) {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = macroCanvas.getBoundingClientRect();
+                if (macroCanvas.width !== rect.width * dpr || macroCanvas.height !== rect.height * dpr) {
+                    macroCanvas.width = rect.width * dpr;
+                    macroCanvas.height = rect.height * dpr;
+                }
+                const w = macroCanvas.width;
+                const h = macroCanvas.height;
+                macroCtx.clearRect(0, 0, w, h);
+
+                // Altezza base del contenuto proporzionale alla massa (50g -> 35%, 100g -> 48%, 250g -> 65%)
+                const baseLevel = state.mass === 50 ? 0.36 : (state.mass === 100 ? 0.48 : 0.64);
+                
+                let liquidLevel = 0;
+                let iceScale = 0;
+                let steamIntensity = 0;
+                let boilIntensity = 0;
+
+                if (state.stageIndex === 0) {
+                    iceScale = 1;
+                } else if (state.stageIndex === 1) {
+                    iceScale = 1 - state.stageProgress;
+                    liquidLevel = baseLevel * state.stageProgress;
+                } else if (state.stageIndex === 2) {
+                    liquidLevel = baseLevel;
+                    if (state.temp > 70) steamIntensity = (state.temp - 70) / 30 * 0.4;
+                } else if (state.stageIndex === 3) {
+                    liquidLevel = baseLevel * (1 - state.stageProgress);
+                    boilIntensity = 1 - state.stageProgress * 0.5;
+                    steamIntensity = 0.8 + state.stageProgress * 0.2;
+                } else {
+                    liquidLevel = 0;
+                    steamIntensity = 1;
+                }
+
+                // 1. Disegna Acqua Liquida
+                if (liquidLevel > 0.01) {
+                    const liqH = h * liquidLevel;
+                    const liqY = h - liqH;
+                    const waveAmp = (state.stageIndex === 3 ? 3 : 1) * dpr;
+
+                    macroCtx.fillStyle = 'rgba(14, 165, 233, 0.65)';
+                    macroCtx.beginPath();
+                    macroCtx.moveTo(0, h);
+                    macroCtx.lineTo(0, liqY);
+                    for (let x = 0; x <= w; x += 8) {
+                        const wy = liqY + Math.sin(x * 0.08 + timeSec * 6) * waveAmp;
+                        macroCtx.lineTo(x, wy);
+                    }
+                    macroCtx.lineTo(w, h);
+                    macroCtx.closePath();
+                    macroCtx.fill();
+
+                    // Bolle di ebollizione durante il tratto D-E (o pre-ebollizione > 85°C)
+                    if (boilIntensity > 0 || state.temp > 85) {
+                        const activeBubbles = boilIntensity > 0 ? 18 : 6;
+                        macroCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                        for (let i = 0; i < activeBubbles; i++) {
+                            const b = bubbles[i];
+                            b.y -= b.speed * dt * (boilIntensity > 0 ? 1.8 : 0.7);
+                            if (b.y < 0) {
+                                b.y = 1;
+                                b.x = 0.1 + Math.random() * 0.8;
+                            }
+                            const bx = b.x * w;
+                            const by = liqY + b.y * liqH;
+                            if (by > liqY + 3) {
+                                macroCtx.beginPath();
+                                macroCtx.arc(bx, by, b.r * dpr, 0, Math.PI * 2);
+                                macroCtx.fill();
+                            }
+                        }
+                    }
+                }
+
+                // 2. Disegna Cubetto/Blocco di Ghiaccio
+                if (iceScale > 0.02) {
+                    const iceW = w * 0.62 * Math.sqrt(iceScale);
+                    const iceH = h * baseLevel * Math.sqrt(iceScale);
+                    const iceX = (w - iceW) / 2;
+                    // Se c'è acqua, il ghiaccio galleggia leggermente (densità ghiaccio < densità acqua!)
+                    const floatOffset = liquidLevel > 0 ? Math.min(h * liquidLevel * 0.85, iceH * 0.88) : 0;
+                    const iceY = h - iceH - floatOffset + (liquidLevel > 0 ? iceH * 0.12 : 0);
+
+                    macroCtx.save();
+                    macroCtx.fillStyle = 'rgba(186, 230, 253, 0.88)';
+                    macroCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                    macroCtx.lineWidth = 2 * dpr;
+                    
+                    macroCtx.beginPath();
+                    macroCtx.roundRect(iceX, iceY, iceW, iceH, 8 * dpr);
+                    macroCtx.fill();
+                    macroCtx.stroke();
+
+                    // Riflesso cristallino diagonale
+                    macroCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    macroCtx.beginPath();
+                    macroCtx.moveTo(iceX + iceW * 0.2, iceY + iceH * 0.25);
+                    macroCtx.lineTo(iceX + iceW * 0.55, iceY + iceH * 0.6);
+                    macroCtx.stroke();
+                    macroCtx.restore();
+                }
+
+                // 3. Disegna Nuvole/Sbuffi di Vapore
+                if (steamIntensity > 0.05) {
+                    macroCtx.save();
+                    for (let i = 0; i < 6; i++) {
+                        const progress = ((timeSec * 0.5 + i * 0.17) % 1);
+                        const sx = w * (0.25 + 0.5 * ((i * 37) % 10) / 10) + Math.sin(timeSec * 3 + i) * 6 * dpr;
+                        const sy = h * (0.65 - progress * 0.6);
+                        const sr = (8 + progress * 14) * dpr;
+                        const alpha = (1 - progress) * steamIntensity * 0.45;
+
+                        macroCtx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
+                        macroCtx.beginPath();
+                        macroCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+                        macroCtx.fill();
+                    }
+                    macroCtx.restore();
+                }
+            }
+
+            // =========================================================================
+            // 4. GRAFICO INTERATTIVO DELLA CURVA DI RISCALDAMENTO (T vs Q)
+            // =========================================================================
+            const curveCanvas = document.getElementById('curveCanvas');
+            const curveCtx = curveCanvas.getContext('2d');
+            let chartGeometry = null; // Memorizza coordinate punti A..F per click/hover
+
+            function drawHeatingCurve() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = curveCanvas.getBoundingClientRect();
+                if (curveCanvas.width !== rect.width * dpr || curveCanvas.height !== rect.height * dpr) {
+                    curveCanvas.width = rect.width * dpr;
+                    curveCanvas.height = rect.height * dpr;
+                }
+                const w = curveCanvas.width;
+                const h = curveCanvas.height;
+                const isDark = document.documentElement.classList.contains('dark');
+
+                curveCtx.clearRect(0, 0, w, h);
+
+                // Margini interni del grafico
+                const pad = {
+                    left: 52 * dpr,
+                    right: 26 * dpr,
+                    top: 26 * dpr,
+                    bottom: 42 * dpr
+                };
+                const plotW = w - pad.left - pad.right;
+                const plotH = h - pad.top - pad.bottom;
+
+                const maxQ = state.thresholds[4];
+                const minT = -30;
+                const maxT = 130;
+
+                // Funzioni di mappatura dati -> pixel
+                const mapX = (q) => pad.left + (q / maxQ) * plotW;
+                const mapY = (t) => pad.top + plotH - ((t - minT) / (maxT - minT)) * plotH;
+
+                // Coordinate dei 6 punti chiave A, B, C, D, E, F
+                const points = [
+                    { label: 'A', q: 0, t: -20 },
+                    { label: 'B', q: state.thresholds[0], t: 0 },
+                    { label: 'C', q: state.thresholds[1], t: 0 },
+                    { label: 'D', q: state.thresholds[2], t: 100 },
+                    { label: 'E', q: state.thresholds[3], t: 100 },
+                    { label: 'F', q: state.thresholds[4], t: 120 }
+                ].map(p => ({ ...p, x: mapX(p.q), y: mapY(p.t) }));
+
+                chartGeometry = { points, pad, plotW, plotH, maxQ };
+
+                // Griglia di sfondo e linee di riferimento 0°C e 100°C
+                curveCtx.save();
+                curveCtx.font = `${10 * dpr}px "JetBrains Mono", monospace`;
+                curveCtx.textAlign = 'right';
+                curveCtx.textBaseline = 'middle';
+
+                const tempTicks = [-20, 0, 20, 40, 60, 80, 100, 120];
+                tempTicks.forEach(t => {
+                    const y = mapY(t);
+                    const isPhaseTemp = (t === 0 || t === 100);
+
+                    curveCtx.beginPath();
+                    curveCtx.moveTo(pad.left, y);
+                    curveCtx.lineTo(w - pad.right, y);
+                    if (isPhaseTemp) {
+                        curveCtx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.3)';
+                        curveCtx.setLineDash([4 * dpr, 4 * dpr]);
+                        curveCtx.lineWidth = 1.2 * dpr;
+                    } else {
+                        curveCtx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(203, 213, 225, 0.6)';
+                        curveCtx.setLineDash([]);
+                        curveCtx.lineWidth = 1 * dpr;
+                    }
+                    curveCtx.stroke();
+
+                    // Etichetta asse Y
+                    curveCtx.fillStyle = isPhaseTemp
+                        ? (isDark ? '#38bdf8' : '#0284c7')
+                        : (isDark ? '#94a3b8' : '#64748b');
+                    curveCtx.font = isPhaseTemp ? `bold ${10.5 * dpr}px "JetBrains Mono", monospace` : `${10 * dpr}px "JetBrains Mono", monospace`;
+                    curveCtx.fillText(`${t}°C`, pad.left - 8 * dpr, y);
+                });
+
+                // Tacche asse X (Calore Q in kJ)
+                curveCtx.setLineDash([]);
+                curveCtx.textAlign = 'center';
+                curveCtx.textBaseline = 'top';
+                const numXTicks = 4;
+                for (let i = 0; i <= numXTicks; i++) {
+                    const qVal = (maxQ / numXTicks) * i;
+                    const x = mapX(qVal);
+                    curveCtx.beginPath();
+                    curveCtx.moveTo(x, pad.top + plotH);
+                    curveCtx.lineTo(x, pad.top + plotH + 5 * dpr);
+                    curveCtx.strokeStyle = isDark ? '#475569' : '#94a3b8';
+                    curveCtx.stroke();
+
+                    curveCtx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+                    curveCtx.fillText(`${(qVal / 1000).toFixed(0)} kJ`, x, pad.top + plotH + 8 * dpr);
+                }
+
+                // Titolo Asse X
+                curveCtx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+                curveCtx.font = `bold ${10 * dpr}px "Inter", sans-serif`;
+                curveCtx.fillText('Calore fornito Q (kJ)  [Q = P · t]', pad.left + plotW / 2, h - 14 * dpr);
+
+                // Evidenziazione sfondo del tratto attivo
+                const activeP1 = points[state.stageIndex];
+                const activeP2 = points[state.stageIndex + 1];
+                curveCtx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(2, 132, 199, 0.07)';
+                curveCtx.fillRect(activeP1.x, pad.top, activeP2.x - activeP1.x, plotH);
+
+                // Traccia curva completa teorica (sfondo tratteggiato)
+                curveCtx.beginPath();
+                curveCtx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    curveCtx.lineTo(points[i].x, points[i].y);
+                }
+                curveCtx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(148, 163, 184, 0.6)';
+                curveCtx.lineWidth = 2.5 * dpr;
+                curveCtx.setLineDash([5 * dpr, 4 * dpr]);
+                curveCtx.stroke();
+                curveCtx.setLineDash([]);
+
+                // Traccia curva percorsa finora (colorata per ogni segmento!)
+                const currX = mapX(state.currentQ);
+                const currY = mapY(state.temp);
+
+                for (let i = 0; i <= state.stageIndex; i++) {
+                    const pStart = points[i];
+                    const pEnd = (i === state.stageIndex) ? { x: currX, y: currY } : points[i + 1];
+
+                    curveCtx.beginPath();
+                    curveCtx.moveTo(pStart.x, pStart.y);
+                    curveCtx.lineTo(pEnd.x, pEnd.y);
+                    curveCtx.strokeStyle = STAGES_INFO[i].color;
+                    curveCtx.lineWidth = 4 * dpr;
+                    curveCtx.lineCap = 'round';
+                    curveCtx.stroke();
+                }
+
+                // Etichette didattiche sulle soste termiche B-C e D-E
+                curveCtx.font = `bold ${9.5 * dpr}px "Inter", sans-serif`;
+                curveCtx.textAlign = 'center';
+                
+                // Etichetta Fusione
+                const midBC_X = (points[1].x + points[2].x) / 2;
+                curveCtx.fillStyle = '#0d9488';
+                curveCtx.fillText('FUSIONE (0°C)', midBC_X, points[1].y - 11 * dpr);
+
+                // Etichetta Ebollizione
+                const midDE_X = (points[3].x + points[4].x) / 2;
+                curveCtx.fillStyle = '#d97706';
+                curveCtx.fillText('EBOLLIZIONE (100°C) - Sosta Termica', midDE_X, points[3].y - 11 * dpr);
+
+                // Nodi A, B, C, D, E, F
+                points.forEach((p, idx) => {
+                    const reached = state.currentQ >= p.q - 1;
+                    curveCtx.beginPath();
+                    curveCtx.arc(p.x, p.y, 4 * dpr, 0, Math.PI * 2);
+                    curveCtx.fillStyle = reached ? '#0284c7' : (isDark ? '#334155' : '#cbd5e1');
+                    curveCtx.fill();
+
+                    curveCtx.fillStyle = isDark ? '#e2e8f0' : '#1e293b';
+                    curveCtx.font = `bold ${10 * dpr}px "Inter", sans-serif`;
+                    const offsetY = (idx === 1 || idx === 3) ? 14 * dpr : -10 * dpr;
+                    curveCtx.fillText(p.label, p.x, p.y + offsetY);
+                });
+
+                // Cursore punto operativo corrente (con alone luminoso)
+                curveCtx.beginPath();
+                curveCtx.arc(currX, currY, 9 * dpr, 0, Math.PI * 2);
+                curveCtx.fillStyle = 'rgba(2, 132, 199, 0.25)';
+                curveCtx.fill();
+
+                curveCtx.beginPath();
+                curveCtx.arc(currX, currY, 5 * dpr, 0, Math.PI * 2);
+                curveCtx.fillStyle = '#ffffff';
+                curveCtx.fill();
+                curveCtx.lineWidth = 2.5 * dpr;
+                curveCtx.strokeStyle = STAGES_INFO[state.stageIndex].color;
+                curveCtx.stroke();
+
+                curveCtx.restore();
+            }
+
+            // Interazione click sul canvas del grafico per saltare a qualsiasi punto della curva
+            curveCanvas.addEventListener('click', (e) => {
+                if (!chartGeometry) return;
+                const rect = curveCanvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                const clickX = (e.clientX - rect.left) * dpr;
+                const { pad, plotW, maxQ } = chartGeometry;
+
+                const ratio = Math.max(0, Math.min(1, (clickX - pad.left) / plotW));
+                state.currentQ = ratio * maxQ;
+                state.elapsedTime = state.currentQ / state.power;
+                updateThermodynamicsFromQ();
+                updateUI();
+            });
+
+            // =========================================================================
+            // 5. AGGIORNAMENTO INTERFACCIA UTENTE (DOM)
+            // =========================================================================
+            const dom = {
+                tempDisplay: document.getElementById('tempDisplay'),
+                thermoBar: document.getElementById('thermoBar'),
+                badgePhaseMacro: document.getElementById('badgePhaseMacro'),
+                bondStatus: document.getElementById('bondStatus'),
+                heatTotalDisplay: document.getElementById('heatTotalDisplay'),
+                timeDisplay: document.getElementById('timeDisplay'),
+                barKinetic: document.getElementById('barKinetic'),
+                barPotential: document.getElementById('barPotential'),
+                ecStatus: document.getElementById('ecStatus'),
+                epStatus: document.getElementById('epStatus'),
+                heaterElement: document.getElementById('heaterElement'),
+                powerIndicator: document.getElementById('powerIndicator'),
+                // Pannello Teoria
+                stageCodeBadge: document.getElementById('stageCodeBadge'),
+                stageTypeBadge: document.getElementById('stageTypeBadge'),
+                stageTitle: document.getElementById('stageTitle'),
+                stageDesc: document.getElementById('stageDesc'),
+                formulaBox: document.getElementById('formulaBox'),
+                calcMass: document.getElementById('calcMass'),
+                calcConstLabel: document.getElementById('calcConstLabel'),
+                calcConstVal: document.getElementById('calcConstVal'),
+                calcDeltaLabel: document.getElementById('calcDeltaLabel'),
+                calcDeltaVal: document.getElementById('calcDeltaVal'),
+                calcTotalStageQ: document.getElementById('calcTotalStageQ')
+            };
+
+            let lastRenderedStage = -1;
+
+            function updateUI() {
+                const info = STAGES_INFO[state.stageIndex];
+
+                // Temperatura e barra termometro
+                dom.tempDisplay.textContent = `${state.temp.toFixed(1)} °C`;
+                const thermoPct = Math.max(5, Math.min(100, ((state.temp + 20) / 140) * 100));
+                dom.thermoBar.style.height = `${thermoPct}%`;
+                
+                // Colore termometro in base alla temperatura
+                if (state.temp <= 0) {
+                    dom.thermoBar.className = 'w-full bg-sky-500 rounded-full transition-all duration-100';
+                } else if (state.temp < 100) {
+                    dom.thermoBar.className = 'w-full bg-amber-500 rounded-full transition-all duration-100';
+                } else {
+                    dom.thermoBar.className = 'w-full bg-rose-500 rounded-full transition-all duration-100';
+                }
+
+                // Calore e Tempo
+                dom.heatTotalDisplay.textContent = `${(state.currentQ / 1000).toFixed(2)} kJ`;
+                dom.timeDisplay.textContent = `${Math.round(state.elapsedTime)} s`;
+
+                // Barre Energia Cinetica vs Potenziale
+                const isLatent = (state.stageIndex === 1 || state.stageIndex === 3);
+                const ecPct = Math.max(5, Math.min(100, ((state.temp + 25) / 150) * 100));
+                
+                // Energia potenziale cresce principalmente durante i passaggi di stato (0->30% in fusione, 35->95% in ebollizione)
+                let epPct = 8;
+                if (state.stageIndex === 0) epPct = 8 + state.stageProgress * 4;
+                else if (state.stageIndex === 1) epPct = 12 + state.stageProgress * 23;
+                else if (state.stageIndex === 2) epPct = 35 + state.stageProgress * 7;
+                else if (state.stageIndex === 3) epPct = 42 + state.stageProgress * 53;
+                else epPct = 95 + state.stageProgress * 5;
+
+                dom.barKinetic.style.width = `${ecPct}%`;
+                dom.barPotential.style.width = `${epPct}%`;
+
+                if (state.isRunning) {
+                    if (isLatent) {
+                        dom.ecStatus.textContent = "COSTANTE (ΔT=0)";
+                        dom.ecStatus.className = "text-[10px] font-bold text-slate-400";
+                        dom.epStatus.textContent = "AUMENTA (Rottura legami)";
+                        dom.epStatus.className = "text-[10px] font-bold text-sky-500";
+                    } else {
+                        dom.ecStatus.textContent = "AUMENTA (ΔT > 0)";
+                        dom.ecStatus.className = "text-[10px] font-bold text-rose-500";
+                        dom.epStatus.textContent = "Quasi costante";
+                        dom.epStatus.className = "text-[10px] font-bold text-slate-400";
+                    }
+                } else {
+                    dom.ecStatus.textContent = isLatent ? "Costante" : "Prop. a T";
+                    dom.epStatus.textContent = isLatent ? "Latente" : "Stabile";
+                }
+
+                // Effetto visivo piastra accesa/spenta
+                if (state.isRunning) {
+                    dom.heaterElement.className = "w-32 h-2.5 rounded-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)] heater-glow";
+                } else {
+                    dom.heaterElement.className = "w-32 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-colors duration-300";
+                }
+
+                // Aggiorna pannello didattico e pulsanti tratto se lo stadio è cambiato
+                if (lastRenderedStage !== state.stageIndex) {
+                    lastRenderedStage = state.stageIndex;
+                    
+                    dom.badgePhaseMacro.textContent = info.macroLabel;
+                    dom.badgePhaseMacro.className = `px-2.5 py-0.5 rounded-md text-xs font-bold ${info.badgeClass}`;
+                    dom.bondStatus.textContent = info.bondText;
+
+                    dom.stageCodeBadge.textContent = info.code;
+                    dom.stageTypeBadge.textContent = info.type;
+                    dom.stageTitle.textContent = info.title;
+                    dom.stageDesc.textContent = info.desc;
+                    dom.formulaBox.innerHTML = info.formula.replace(/_([a-z])/g, '<sub>$1</sub>');
+
+                    dom.calcConstLabel.innerHTML = info.constLabel.replace(/_([a-z])/g, '<sub>$1</sub>');
+                    dom.calcConstVal.textContent = info.constVal;
+                    dom.calcDeltaLabel.textContent = info.deltaLabel;
+                    dom.calcDeltaVal.textContent = info.deltaVal;
+
+                    // Evidenzia pulsante del tratto attivo sotto il grafico
+                    document.querySelectorAll('.stage-btn').forEach((btn, idx) => {
+                        if (idx === state.stageIndex) {
+                            btn.className = "stage-btn flex flex-col items-center p-2 rounded-xl border-2 text-center transition bg-sky-50 border-sky-500 dark:bg-sky-950/70 dark:border-sky-400 shadow-sm";
+                        } else {
+                            btn.className = "stage-btn flex flex-col items-center p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-center transition opacity-75 hover:opacity-100";
+                        }
+                    });
+                }
+
+                // Valori dipendenti dalla massa (sempre aggiornati)
+                dom.calcMass.textContent = `${(state.mass / 1000).toFixed(3)} kg (${state.mass} g)`;
+                const stageQ_kJ = state.stageEnergies[state.stageIndex] / 1000;
+                dom.calcTotalStageQ.textContent = `${stageQ_kJ.toFixed(2)} kJ`;
+            }
+
+            // =========================================================================
+            // 6. LOOP DI ANIMAZIONE A 60 FPS
+            // =========================================================================
+            function animationLoop(timestamp) {
+                if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+                const dt = Math.min(0.05, (timestamp - state.lastFrameTime) / 1000); // Cap dt a 50ms
+                state.lastFrameTime = timestamp;
+                const timeSec = timestamp / 1000;
+
+                if (state.isRunning) {
+                    // Accelerazione didattica controllata affinché l'intera curva duri ~35-45s a 1x per 100g
+                    const didacticTimeScale = 14; 
+                    const simDt = dt * state.speed * didacticTimeScale;
+                    
+                    state.elapsedTime += simDt;
+                    state.currentQ += state.power * simDt;
+
+                    // Ferma automaticamente alla fine della curva (120°C)
+                    if (state.currentQ >= state.thresholds[4]) {
+                        state.currentQ = state.thresholds[4];
+                        togglePlayPause(false);
+                    }
+
+                    updateThermodynamicsFromQ();
+                    updateUI();
+                }
+
+                updateAndDrawMolecules(dt, timeSec);
+                drawMacroBeaker(dt, timeSec);
+                drawHeatingCurve();
+
+                requestAnimationFrame(animationLoop);
+            }
+
+            // =========================================================================
+            // 7. CONTROLLI INTERATTIVI E EVENT LISTENERS
+            // =========================================================================
+            const btnPlayPause = document.getElementById('btnPlayPause');
+            const iconPlay = document.getElementById('iconPlay');
+            const iconPause = document.getElementById('iconPause');
+            const txtPlayPause = document.getElementById('txtPlayPause');
+
+            function togglePlayPause(forceState = null) {
+                state.isRunning = forceState !== null ? forceState : !state.isRunning;
+                
+                // Se siamo arrivati alla fine e l'utente preme Avvia, riparti da zero
+                if (state.isRunning && state.currentQ >= state.thresholds[4] - 1) {
+                    state.currentQ = 0;
+                    state.elapsedTime = 0;
+                    updateThermodynamicsFromQ();
+                }
+
+                if (state.isRunning) {
+                    iconPlay.classList.add('hidden');
+                    iconPause.classList.remove('hidden');
+                    txtPlayPause.textContent = "Pausa";
+                    btnPlayPause.classList.replace('bg-sky-600', 'bg-amber-600');
+                    btnPlayPause.classList.replace('hover:bg-sky-500', 'hover:bg-amber-500');
+                } else {
+                    iconPlay.classList.remove('hidden');
+                    iconPause.classList.add('hidden');
+                    txtPlayPause.textContent = "Avvia Riscaldamento";
+                    btnPlayPause.classList.replace('bg-amber-600', 'bg-sky-600');
+                    btnPlayPause.classList.replace('hover:bg-amber-500', 'hover:bg-sky-500');
+                }
+                updateUI();
+            }
+
+            btnPlayPause.addEventListener('click', () => togglePlayPause());
+
+            document.getElementById('btnReset').addEventListener('click', () => {
+                togglePlayPause(false);
+                state.currentQ = 0;
+                state.elapsedTime = 0;
+                lastRenderedStage = -1;
+                updateThermodynamicsFromQ();
+                updateUI();
+            });
+
+            // Velocità (1x, 2x, 4x)
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.speed = Number(btn.dataset.speed);
+                    document.querySelectorAll('.speed-btn').forEach(b => {
+                        b.className = "speed-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900";
+                    });
+                    btn.className = "speed-btn px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400";
+                });
+            });
+
+            // Massa (50g, 100g, 250g)
+            document.querySelectorAll('.mass-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const oldProgressRatio = state.currentQ / state.thresholds[4];
+                    state.mass = Number(btn.dataset.mass);
+                    recalculateThresholds();
+                    // Mantiene proporzionalmente la posizione sulla curva
+                    state.currentQ = oldProgressRatio * state.thresholds[4];
+                    state.elapsedTime = state.currentQ / state.power;
+                    
+                    document.querySelectorAll('.mass-btn').forEach(b => {
+                        b.className = "mass-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900";
+                    });
+                    btn.className = "mass-btn px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400";
+                    
+                    lastRenderedStage = -1;
+                    updateThermodynamicsFromQ();
+                    updateUI();
+                });
+            });
+
+            // Slider Potenza Fornello
+            const powerSlider = document.getElementById('powerSlider');
+            powerSlider.addEventListener('input', (e) => {
+                state.power = Number(e.target.value);
+                document.getElementById('powerValueLabel').textContent = `${state.power} W (${state.power} J/s)`;
+                dom.powerIndicator.textContent = `POTENZA: ${state.power} W`;
+            });
+
+            // Pulsanti selezione rapida dei 5 tratti
+            document.querySelectorAll('.stage-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const stageIdx = Number(btn.dataset.stage);
+                    const startQ = stageIdx === 0 ? 0 : state.thresholds[stageIdx - 1];
+                    const endQ = state.thresholds[stageIdx];
+                    // Posiziona al 25% del tratto selezionato per osservarlo bene
+                    state.currentQ = startQ + (endQ - startQ) * 0.25;
+                    state.elapsedTime = state.currentQ / state.power;
+                    lastRenderedStage = -1;
+                    updateThermodynamicsFromQ();
+                    updateUI();
+                });
+            });
+
+            // Tema Chiaro / Scuro
+            document.getElementById('btnTheme').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+
+            // Tabs del Pannello Didattico (Teoria / Soste Termiche / Quiz)
+            const tabs = [
+                { btn: document.getElementById('tabTheoryBtn'), panel: document.getElementById('panelTheory') },
+                { btn: document.getElementById('tabFaqBtn'), panel: document.getElementById('panelFaq') },
+                { btn: document.getElementById('tabQuizBtn'), panel: document.getElementById('panelQuiz') }
+            ];
+
+            tabs.forEach(t => {
+                t.btn.addEventListener('click', () => {
+                    tabs.forEach(item => {
+                        item.panel.classList.add('hidden');
+                        item.panel.classList.remove('flex');
+                        item.btn.className = "flex-1 py-3 px-2 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition flex items-center justify-center gap-1";
+                    });
+                    t.panel.classList.remove('hidden');
+                    t.panel.classList.add('flex');
+                    t.btn.className = "flex-1 py-3 px-2 text-xs font-bold uppercase tracking-wider border-b-2 border-sky-600 text-sky-600 dark:text-sky-400 transition flex items-center justify-center gap-1";
+                });
+            });
+
+            // =========================================================================
+            // 8. MINI-QUIZ INTERATTIVO DI AUTOVALUTAZIONE (5 DOMANDE)
+            // =========================================================================
+            const QUIZ_DATA = [
+                {
+                    q: "1. Durante la fusione del ghiaccio a 0°C, cosa accade alla temperatura mentre il fornello rimane acceso?",
+                    options: [
+                        "Aumenta regolarmente di 1°C al secondo",
+                        "Resta costante a 0°C (sosta termica)",
+                        "Diminuisce perché il ghiaccio assorbe freddo"
+                    ],
+                    correct: 1,
+                    explanation: "Esatto! Durante un passaggio di stato la temperatura non varia: tutto il calore latente serve a rompere i legami del reticolo cristallino."
+                },
+                {
+                    q: "2. Quale forma di energia interna delle molecole aumenta durante una sosta termica?",
+                    options: [
+                        "L'energia potenziale intermolecolare",
+                        "L'energia cinetica media di traslazione",
+                        "L'energia nucleare degli atomi di ossigeno"
+                    ],
+                    correct: 0,
+                    explanation: "Corretto! L'energia cinetica media resta invariata (T costante), mentre aumenta l'energia potenziale legata all'allontanamento delle molecole."
+                },
+                {
+                    q: "3. Perché il pianerottolo dell'ebollizione (100°C) è molto più lungo di quello della fusione (0°C)?",
+                    options: [
+                        "Perché a 100°C il fornello perde efficienza",
+                        "Perché il calore latente di vaporizzazione (2260 kJ/kg) è molto maggiore di quello di fusione (334 kJ/kg)",
+                        "Perché il vapore ha una massa maggiore dell'acqua liquida"
+                    ],
+                    correct: 1,
+                    explanation: "Ottimo! Per vaporizzare l'acqua occorre spezzare completamente tutti i legami a idrogeno, richiedendo quasi 7 volte più energia rispetto alla fusione."
+                },
+                {
+                    q: "4. Se raddoppiamo la massa d'acqua nel becher (da 100g a 200g) a parità di potenza del fornello, come cambia la curva?",
+                    options: [
+                        "Le temperature di fusione ed ebollizione raddoppiano (0°C e 200°C)",
+                        "La curva rimane identica in ogni punto",
+                        "Le soste restano a 0°C e 100°C, ma i tempi e il calore Q necessario raddoppiano"
+                    ],
+                    correct: 2,
+                    explanation: "Perfetto! Le temperature di fusione ed ebollizione sono proprietà intensive (non dipendono dalla massa), mentre il calore Q = m·c·ΔT e Q = m·L è direttamente proporzionale alla massa."
+                },
+                {
+                    q: "5. Quale formula si utilizza per calcolare il calore assorbito dall'acqua liquida mentre si scalda da 20°C a 80°C?",
+                    options: [
+                        "Q = m · c · ΔT (Calore sensibile)",
+                        "Q = m · L_v (Calore latente)",
+                        "Q = m / ΔT"
+                    ],
+                    correct: 0,
+                    explanation: "Esatto! Non essendoci passaggio di stato tra 20°C e 80°C, si applica la legge fondamentale della termologia Q = m · c · ΔT."
+                }
+            ];
+
+            let quizIdx = 0;
+            let quizScore = 0;
+            let quizAnswered = false;
+
+            const quizQuestion = document.getElementById('quizQuestion');
+            const quizOptions = document.getElementById('quizOptions');
+            const quizFeedback = document.getElementById('quizFeedback');
+            const quizProgress = document.getElementById('quizProgress');
+            const quizScoreBadge = document.getElementById('quizScoreBadge');
+            const btnNextQuiz = document.getElementById('btnNextQuiz');
+            const btnRestartQuiz = document.getElementById('btnRestartQuiz');
+
+            function renderQuizQuestion() {
+                quizAnswered = false;
+                const item = QUIZ_DATA[quizIdx];
+                quizProgress.textContent = `Domanda ${quizIdx + 1} di ${QUIZ_DATA.length}`;
+                quizScoreBadge.textContent = `Punti: ${quizScore}`;
+                quizQuestion.textContent = item.q;
+                quizFeedback.classList.add('hidden');
+                btnNextQuiz.classList.add('hidden');
+                btnRestartQuiz.classList.add('hidden');
+
+                quizOptions.innerHTML = '';
+                item.options.forEach((optText, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition flex items-start gap-2";
+                    btn.innerHTML = `<span class="font-mono font-bold text-sky-600 dark:text-sky-400">${String.fromCharCode(65 + idx)}.</span> <span>${optText}</span>`;
+                    btn.addEventListener('click', () => handleQuizAnswer(idx, btn));
+                    quizOptions.appendChild(btn);
+                });
+            }
+
+            function handleQuizAnswer(selectedIdx, clickedBtn) {
+                if (quizAnswered) return;
+                quizAnswered = true;
+                const item = QUIZ_DATA[quizIdx];
+                const allBtns = quizOptions.querySelectorAll('button');
+
+                if (selectedIdx === item.correct) {
+                    quizScore++;
+                    quizScoreBadge.textContent = `Punti: ${quizScore}`;
+                    clickedBtn.className = "w-full text-left p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-start gap-2";
+                    quizFeedback.className = "p-3 rounded-xl text-xs leading-relaxed bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800";
+                } else {
+                    clickedBtn.className = "w-full text-left p-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-xs font-bold text-rose-900 dark:text-rose-200 flex items-start gap-2";
+                    allBtns[item.correct].className = "w-full text-left p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-start gap-2";
+                    quizFeedback.className = "p-3 rounded-xl text-xs leading-relaxed bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800";
+                }
+
+                quizFeedback.textContent = item.explanation;
+                quizFeedback.classList.remove('hidden');
+
+                if (quizIdx < QUIZ_DATA.length - 1) {
+                    btnNextQuiz.classList.remove('hidden');
+                } else {
+                    btnRestartQuiz.classList.remove('hidden');
+                    quizProgress.textContent = `Completato! Punteggio finale: ${quizScore}/${QUIZ_DATA.length}`;
+                }
+            }
+
+            btnNextQuiz.addEventListener('click', () => {
+                quizIdx++;
+                renderQuizQuestion();
+            });
+
+            btnRestartQuiz.addEventListener('click', () => {
+                quizIdx = 0;
+                quizScore = 0;
+                renderQuizQuestion();
+            });
+
+            // =========================================================================
+            // 9. INIZIALIZZAZIONE GENERALE
+            // =========================================================================
+            recalculateThresholds();
+            initMolecules();
+            updateThermodynamicsFromQ();
+            updateUI();
+            renderQuizQuestion();
+            requestAnimationFrame(animationLoop);
+        });
+    </script>
+</body>
+</html>
